@@ -83,6 +83,16 @@ const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("profile
 
 profileRouter.post("/:userId/picture",uploadOnCloudinary, async (req, res, next) => {
     try {
+        const newImage = {image: req.file.path}
+        const updatedImage = await ProfileModel.findByIdAndUpdate(req.params.userId, newImage, {
+            new: true,
+            runValidators: true
+        })
+        if(updatedImage){
+            res.send(updatedImage)
+        }else{
+            res.send(404).send(`Profile image with the id of ${req.params.userId} not found!`)
+        }
         
     } catch (error) {
         next(createError(500, "Error in profileing profile details"))
