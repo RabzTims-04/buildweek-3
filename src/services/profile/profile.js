@@ -22,7 +22,7 @@ profileRouter.get("/", async (req, res, next) => {
     }
 })
 
-/* ***************GET single profile****************** */
+/* ***************GET SINGLE ****************** */
 
 profileRouter.get("/:userId", async (req, res, next) => {
     try {
