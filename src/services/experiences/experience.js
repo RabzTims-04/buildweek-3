@@ -5,7 +5,10 @@ import ExperienceModel from "./schema.js"
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
+import json2csv from "json2csv";
+import { pipeline } from "stream";
 
+const Json2csvParser = json2csv.Parser
 const experiencesRouter = express.Router();
 
 /* *************GET experiences******************** */
@@ -16,6 +19,31 @@ experiencesRouter.get("/", async (req, res, next) => {
         res.send(experiences)
     } catch (error) {
         next(createError(500, "Error in getting experiences"))
+    }
+})
+
+/* ***************GET experiences as CSV****************** */
+
+experiencesRouter.get("/CSV", async (req, res, next) => {
+    try {
+        const source = await ExperienceModel.find()
+        if(source){
+            const jsonData = JSON.parse(JSON.stringify(source))
+            const fields = ["_id","role", "company", "description", "area", "username", "startDate", "endDate"]
+            const options = {fields}
+            const json2csvParser = new Json2csvParser(options)
+            const csvData = json2csvParser.parse(jsonData)
+            res.setHeader("Content-Disposition","attachment; filename = experiences.csv")
+            res.set("Content-Type", "text/csv")
+            res.status(200).end(csvData)
+        }else{
+            res.status(404).send("source not found")
+        }
+       
+    } catch (error) {
+        next(error)
+        console.log(error);
+        
     }
 })
 
