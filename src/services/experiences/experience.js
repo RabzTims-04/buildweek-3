@@ -38,9 +38,8 @@ experiencesRouter.get("/CSV", async (req, res, next) => {
         }
        
     } catch (error) {
-        next(error)
-        console.log(error);
-        
+        next(createError(500, "Error in downloading CSV file"))
+        console.log(error);        
     }
 })
 
