@@ -15,17 +15,30 @@ const profileRouter = express.Router();
 
 profileRouter.get("/", async (req, res, next) => {
     try {
-        
-        
+        const newUser = new ProfileModel(req.body)
+        const {_id} = await newUser.save()
+        res.status(201).send({_id})       
     } catch (error) {
-        next(createError(500, "Error in getting profile"))
+        if(error.name === "ValidationError"){
+            next(createError(400, error))
+        }else{
+
+            next(createError(500, "Error in getting profile"))
+        }
     }
 })
 
-/* ***************GET single profile****************** */
+/* ***************GET SINGLE ****************** */
 
 profileRouter.get("/:userId", async (req, res, next) => {
     try {
+        const userId = req.params.userId
+        const user = await ProfileModel.findById(userId)
+        if (user){
+            res.send(user)
+        }else{
+            next(createError(404, `profile with an id of ${userId} not found!`))
+        }
 
 
     } catch (error) {
@@ -48,6 +61,9 @@ profileRouter.get("/:userId/CV", async (req, res, next) => {
 
 profileRouter.post("/", async (req, res, next) => {
     try {
+        const newUser = new ProfileModel(req.body)
+        const postingUser = await newUser.save()
+        res.status(201).send(postingUser)
         
     } catch (error) {
         next(createError(500, "Error in profileing profile details"))
@@ -67,6 +83,16 @@ const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("profile
 
 profileRouter.post("/:userId/picture",uploadOnCloudinary, async (req, res, next) => {
     try {
+        const newImage = {image: req.file.path}
+        const updatedImage = await ProfileModel.findByIdAndUpdate(req.params.userId, newImage, {
+            new: true,
+            runValidators: true
+        })
+        if(updatedImage){
+            res.send(updatedImage)
+        }else{
+            res.send(404).send(`Profile image with the id of ${req.params.userId} not found!`)
+        }
         
     } catch (error) {
         next(createError(500, "Error in profileing profile details"))
@@ -77,20 +103,37 @@ profileRouter.post("/:userId/picture",uploadOnCloudinary, async (req, res, next)
 
  profileRouter.put("/:userId", async (req, res, next) => {
     try {
+        const userId = req.params.userId
+        const updatedUser = await ProfileModel.findByIdAndUpdate(userId, req.body, {
+            new:true,
+            runValidators: true,
+        })
+        if (updatedUser){
+            res.send(updatedUser)
+        }else{
+            next(createError(404, `Profile with an id of ${userId} not found!`))
+        }
         
     } catch (error) {
-        next(createError(500, "Error in updating profile details"))
+        next(createError(500, `Error occured while updating profile with an id of ${req.params.userId}`))
     }
 })
- 
+
 
 /* ****************DELETE profile details***************** */
 
 profileRouter.delete("/:userId", async (req, res, next) => {
     try {
+        const userId = req.params.userId
+        const deleteUser = await ProfileModel.findOneAndDelete(userId)
+        if(deletedUser){
+            res.status(204).send()
+        }else{
+            next(createError(404, `Profile with an id of ${userId} not found!`))
+        }
         
     } catch (error) {
-        next(createError(500, "Error in deleting profile details"))
+        next(createError(500, `Error occured while deleting profile with an id of ${req.params.userId}`))
     }
 })
 
