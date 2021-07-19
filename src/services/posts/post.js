@@ -3,8 +3,7 @@ import createError from "http-errors";
 import q2m from "query-to-mongo"
 import PostModel from "./schema.js"
 import multer from "multer";
-import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { cloudinaryStorage } from "../../cloudinary/cloudinary.js"
 
 const postsRouter = express.Router();
 
@@ -12,14 +11,8 @@ const postsRouter = express.Router();
 
 postsRouter.get("/", async (req, res, next) => {
     try {
-        const query = q2m(req.query)
-
-        const posts = await PostModel.find(query.criteria, query.options.fields)
-        .skip(query.options.skip)
-        .limit(query.options.limit)
-        .sort(query.options.sort).populate("profiles")
-        res.send({ links: query.links("/posts", total), total, posts })
-        
+        const posts = await PostModel.find().populate("user")
+        res.send(posts)   
         
     } catch (error) {
         next(createError(500, "Error in getting posts"))
@@ -33,7 +26,7 @@ postsRouter.get("/:postId", async (req, res, next) => {
         
         const postId = req.params.postId
 
-        const post = await PostModel.findById(postId)
+        const post = await PostModel.findById(postId).populate("user")
             if(post){
                 res.status(200).send(post)
             }else(
@@ -43,19 +36,11 @@ postsRouter.get("/:postId", async (req, res, next) => {
     } catch (error) {
         next(createError(500, "Error in getting single post"))
     }
-})
+})  
 
-// const cloudinaryStorage = new CloudinaryStorage({
-//     cloudinary,
-//     params:{
-//       folder:"linkedIn"
-//     }
-//   })
-  
-//   const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("post")
-  
 //   /* ***************post image****************** */
-  
+
+//   const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("post")
 //   postsRouter.post("/:postId",uploadOnCloudinary, async (req, res, next) => {
 //       try {
           
@@ -86,7 +71,6 @@ postsRouter.post("/", async (req, res, next) => {
         const updatePost = await PostModel.findByIdAndUpdate(postId, req.body, {
          new: true , 
          runValidators: true, })
-
         if(updatePost){
             res.status(200).send(updatePost)
         }
@@ -94,12 +78,10 @@ postsRouter.post("/", async (req, res, next) => {
         next(createError(404, "Post not found"))            
         }
 
-
     } catch (error) {
         next(createError(500, "Error in updating post details"))
     }
-})
- 
+}) 
 
 /* ****************DELETE post details***************** */
 

@@ -1,5 +1,4 @@
 import mongoose from "mongoose"
-import createError from "http-errors"
 
 const { Schema, model } = mongoose
 
@@ -20,8 +19,8 @@ const PostSchema = new Schema(
         },
     },
         {
-            timestamps: true, // adding createdAt and modifiedAt automatically
-         
-    })
+            timestamps: true, // adding createdAt and modifiedAt automatically 
+        }
+    )
 
 export default model("Post", PostSchema)

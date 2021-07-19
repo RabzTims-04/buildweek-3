@@ -5,8 +5,7 @@ import ProfileModel from "./schema.js"
 import axios from "axios";
 import { pipeline } from "stream";
 import multer from "multer";
-import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { cloudinaryStorage } from "../../cloudinary/cloudinary.js"
 import { generatePDFReadableStream } from "../../lib/pdf/pdf.js";
 
 const profileRouter = express.Router();
@@ -15,16 +14,10 @@ const profileRouter = express.Router();
 
 profileRouter.get("/", async (req, res, next) => {
     try {
-        const newUser = new ProfileModel(req.body)
-        const {_id} = await newUser.save()
-        res.status(201).send({_id})       
-    } catch (error) {
-        if(error.name === "ValidationError"){
-            next(createError(400, error))
-        }else{
-
-            next(createError(500, "Error in getting profile"))
-        }
+        const newUser = await ProfileModel.find().populate("experiences")
+        res.send(newUser)      
+    } catch (error) {        
+        next(createError(500, "Error in getting profile"))
     }
 })
 
@@ -33,14 +26,12 @@ profileRouter.get("/", async (req, res, next) => {
 profileRouter.get("/:userId", async (req, res, next) => {
     try {
         const userId = req.params.userId
-        const user = await ProfileModel.findById(userId)
+        const user = await ProfileModel.findById(userId).populate("experiences")
         if (user){
             res.send(user)
         }else{
             next(createError(404, `profile with an id of ${userId} not found!`))
         }
-
-
     } catch (error) {
         next(createError(500, "Error in getting single profile"))
     }
@@ -70,17 +61,9 @@ profileRouter.post("/", async (req, res, next) => {
     }
 })
 
- const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary,
-  params:{
-    folder:"linkedIn"
-  }
-})
-
-const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("profile")
-
 /* ***************profile image****************** */
 
+const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("profile")
 profileRouter.post("/:userId/picture",uploadOnCloudinary, async (req, res, next) => {
     try {
         const newImage = {image: req.file.path}
@@ -119,19 +102,17 @@ profileRouter.post("/:userId/picture",uploadOnCloudinary, async (req, res, next)
     }
 })
 
-
 /* ****************DELETE profile details***************** */
 
 profileRouter.delete("/:userId", async (req, res, next) => {
     try {
         const userId = req.params.userId
-        const deleteUser = await ProfileModel.findOneAndDelete(userId)
-        if(deletedUser){
-            res.status(204).send()
+        const deleteUser = await ProfileModel.findByIdAndDelete(userId)
+        if(deleteUser){
+            res.send(deleteUser)
         }else{
             next(createError(404, `Profile with an id of ${userId} not found!`))
-        }
-        
+        }        
     } catch (error) {
         next(createError(500, `Error occured while deleting profile with an id of ${req.params.userId}`))
     }

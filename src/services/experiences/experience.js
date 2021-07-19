@@ -1,8 +1,8 @@
 import express from "express";
 import createError from "http-errors";
-import ExperienceModel from "./schema.js"
 import multer from "multer";
 import json2csv from "json2csv";
+import ProfileModel from "../profile/schema.js"
 import { cloudinaryStorage } from "../../cloudinary/cloudinary.js"
 
 const Json2csvParser = json2csv.Parser
@@ -10,10 +10,15 @@ const experiencesRouter = express.Router();
 
 /* *************GET experiences******************** */
 
-experiencesRouter.get("/", async (req, res, next) => {
+experiencesRouter.get("/:userId/experiences", async (req, res, next) => {
     try {
-        const experiences = await ExperienceModel.find() 
-        res.send(experiences)
+        const profile = await ProfileModel.findById(req.params.userId)
+        if(profile){
+            res.send(profile.experiences)
+        }
+        else{
+            next(createError(404, `Profile with id: ${req.params.userId} not found`))
+        }
     } catch (error) {
         next(createError(500, "Error in getting experiences"))
     }
@@ -21,11 +26,12 @@ experiencesRouter.get("/", async (req, res, next) => {
 
 /* ***************GET experiences as CSV****************** */
 
-experiencesRouter.get("/CSV", async (req, res, next) => {
+experiencesRouter.get("/:userId/experiences/CSV", async (req, res, next) => {
     try {
-        const source = await ExperienceModel.find()
+        const source = await ProfileModel.findById(req.params.userId, {experiences:1, _id:0})
+        console.log(source);
         if(source){
-            const jsonData = JSON.parse(JSON.stringify(source))
+            const jsonData = JSON.parse(JSON.stringify(source.experiences))
             const fields = ["_id","role", "company", "description", "area", "username", "startDate", "endDate"]
             const options = {fields}
             const json2csvParser = new Json2csvParser(options)
@@ -45,11 +51,20 @@ experiencesRouter.get("/CSV", async (req, res, next) => {
 
 /* ***************GET single experience****************** */
 
-experiencesRouter.get("/:expId", async (req, res, next) => {
+experiencesRouter.get("/:userId/experiences/:expId", async (req, res, next) => {
     try {
-        const experience = await ExperienceModel.findById(req.params.expId)
+        const experience = await ProfileModel.findById(req.params.userId,{
+            experiences:{
+                $elemMatch : { _id: req.params.expId}
+            },
+            _id:0
+        })
         if(experience){
-            res.send(experience)
+            if(experience.experiences.length > 0){
+                res.send(experience.experiences[0])
+            }else{
+                next(createError(404, `no experiences found`));
+            }
         }else{
             res.status(404).send(`experience with id: ${req.params.expId} not found`)
         }
@@ -60,12 +75,23 @@ experiencesRouter.get("/:expId", async (req, res, next) => {
 
 /* ***************POST experience details****************** */
 
-experiencesRouter.post("/", async (req, res, next) => {
+experiencesRouter.post("/:userId/experiences", async (req, res, next) => {
     try {
-       const experience = { ...req.body } 
-       const newExperience = new ExperienceModel(experience)
-       const postExperience = await newExperience.save()
-       res.status(201).send(postExperience)
+        const newExperience = { ...req.body }
+       const updatedExperience= await ProfileModel.findByIdAndUpdate(req.params.userId,{
+           $push:{
+               experiences: newExperience
+           }
+       },{
+           new:true,
+           runValidators: true
+       })
+       if(updatedExperience){
+           res.status(201).send(updatedExperience)
+       }
+       else{
+           res.status(404).send(`profile with userid: ${req.params.userId} not found`)
+       }
     } catch (error) {
         next(createError(500, "Error in posting experience details"))
     }
@@ -74,19 +100,27 @@ experiencesRouter.post("/", async (req, res, next) => {
 /* ***************experience image****************** */
 
   const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("experience")
-  experiencesRouter.post("/:expId/picture",uploadOnCloudinary, async (req, res, next) => {
+  experiencesRouter.post("/:userId/experiences/:expId/picture",uploadOnCloudinary, async (req, res, next) => {
       try {
-          const newImage = { image : req.file.path }
-          const experience = await ExperienceModel.findByIdAndUpdate(req.params.expId, newImage , {
-              new:true,
-              runValidators: true
+
+        const experience = await ProfileModel.findOneAndUpdate({
+            _id:req.params.userId,
+            "experiences._id": req.params.expId
+        },{
+            $set:{"experiences.$.image" : req.file.path}
+        },{
+            new: true,
+            runValidators: true,
           })
+
+      console.log(experience);
+ 
           if(experience){
-              res.send(experience)
-          }
-          else{
-            res.status(404).send(`experience with id: ${req.params.expId} not found`)
-          }
+            res.send(experience)
+        }
+        else{
+          res.status(404).send(`experience with id: ${req.params.expId} not found`)
+        }
       } catch (error) {
           next(createError(500, "Error in uploading experience image"))
       }
@@ -94,19 +128,32 @@ experiencesRouter.post("/", async (req, res, next) => {
 
 /* ***************EDIT experience details****************** */
 
- experiencesRouter.put("/:expId", async (req, res, next) => {
+ experiencesRouter.put("/:userId/experiences/:expId", async (req, res, next) => {
     try {
-        const update = req.body
-        const updateExperience = await ExperienceModel.findByIdAndUpdate(req.params.expId, update,{
-            new:true,
-            runValidators: true
-        })
-        if(updateExperience){
-            res.send(updateExperience)
-        }
-        else{
-            res.status(404).send(`experience with id: ${req.params.expId} not found`)
-        }
+    const body = {};
+    for (let key in req.body) {
+      body[`experiences.$.${key}`] = req.body[key];
+    }
+    body[`experiences.$.updatedAt`] = new Date()
+
+    const profile = await ProfileModel.findOneAndUpdate(
+      {
+        _id: req.params.userId,
+        "experiences._id": req.params.expId,
+      },
+      {
+        $set: body,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+    if (profile) {
+      res.send(profile);
+    } else {
+        res.status(404).send(`experience with id: ${req.params.expId} not found`)
+    }
     } catch (error) {
         next(createError(500, "Error in updating experience details"))
     }
@@ -114,13 +161,30 @@ experiencesRouter.post("/", async (req, res, next) => {
 
 /* ****************DELETE experience details***************** */
 
-experiencesRouter.delete("/:expId", async (req, res, next) => {
+experiencesRouter.delete("/:userId/experiences/:expId", async (req, res, next) => {
     try {
-        const deleteExperience = await ExperienceModel.findByIdAndRemove(req.params.expId)
-        if(deleteExperience){
-            res.send(deleteExperience)
-        }else{
-            res.status(404).send(`experience with id: ${req.params.expId} not found`)
+        const experienceToDelete = await ProfileModel.findById(req.params.userId,{
+            experiences:{
+                $elemMatch:{_id:req.params.expId}
+            }
+        })
+        const profile = await ProfileModel.findByIdAndUpdate(
+          req.params.userId,
+          {
+            $pull: {
+                experiences: {
+                _id: req.params.expId,
+              },
+            },
+          },
+          {
+            new: true,
+          }
+        );
+        if (profile) {
+          res.send(experienceToDelete.experiences[0]);
+        } else {
+          next(createError(404, `experience not found`));
         }
     } catch (error) {
         next(createError(500, "Error in deleting experience details"))

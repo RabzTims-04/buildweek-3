@@ -17,9 +17,9 @@ server.use(cors())
 
 // ****************** ROUTES *******************************
 
-server.use("/experiences", experiencesRouter)
 server.use("/posts", postsRouter)
 server.use("/profile", profileRouter)
+server.use("/profile", experiencesRouter)
 
 // ****************** ERROR HANDLERS ***********************
 
