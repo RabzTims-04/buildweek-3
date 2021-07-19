@@ -12,6 +12,13 @@ const postsRouter = express.Router();
 
 postsRouter.get("/", async (req, res, next) => {
     try {
+        const query = q2m(req.query)
+
+        const posts = await PostModel.find(query.criteria, query.options.fields)
+        .skip(query.options.skip)
+        .limit(query.options.limit)
+        .sort(query.options.sort).populate("profiles")
+        res.send({ links: query.links("/posts", total), total, posts })
         
         
     } catch (error) {
@@ -23,39 +30,51 @@ postsRouter.get("/", async (req, res, next) => {
 
 postsRouter.get("/:postId", async (req, res, next) => {
     try {
+        
+        const postId = req.params.postId
 
+        const post = await PostModel.findById(postId)
+            if(post){
+                res.status(200).send(post)
+            }else(
+                next(createError(404, "Post not found"))
+            )
 
     } catch (error) {
         next(createError(500, "Error in getting single post"))
     }
 })
 
-const cloudinaryStorage = new CloudinaryStorage({
-    cloudinary,
-    params:{
-      folder:"linkedIn"
-    }
-  })
+// const cloudinaryStorage = new CloudinaryStorage({
+//     cloudinary,
+//     params:{
+//       folder:"linkedIn"
+//     }
+//   })
   
-  const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("post")
+//   const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("post")
   
-  /* ***************post image****************** */
+//   /* ***************post image****************** */
   
-  postsRouter.post("/:postId",uploadOnCloudinary, async (req, res, next) => {
-      try {
+//   postsRouter.post("/:postId",uploadOnCloudinary, async (req, res, next) => {
+//       try {
           
-      } catch (error) {
-          next(createError(500, "Error in uploading post image"))
-      }
-  })
+//       } catch (error) {
+//           next(createError(500, "Error in uploading post image"))
+//       }
+//   })
 
 /* ***************POST post details****************** */
 
 postsRouter.post("/", async (req, res, next) => {
     try {
+        const createPost = new PostModel(req.body)
+        const { _id } = await createPost.save()
+    
+        res.status(201).send({ _id })
         
     } catch (error) {
-        next(createError(500, "Error in posting post details"))
+        next(createError(500, "Error occurred creating a new post"))
     }
 })
 
@@ -63,7 +82,19 @@ postsRouter.post("/", async (req, res, next) => {
 
  postsRouter.put("/:postId", async (req, res, next) => {
     try {
-        
+        const postId = req.params.postId
+        const updatePost = await PostModel.findByIdAndUpdate(postId, req.body, {
+         new: true , 
+         runValidators: true, })
+
+        if(updatePost){
+            res.status(200).send(updatePost)
+        }
+        else{
+        next(createError(404, "Post not found"))            
+        }
+
+
     } catch (error) {
         next(createError(500, "Error in updating post details"))
     }
@@ -74,7 +105,13 @@ postsRouter.post("/", async (req, res, next) => {
 
 postsRouter.delete("/:postId", async (req, res, next) => {
     try {
-        
+        const postId = req.params.postId
+        const postDeleted = await PostModel.findByIdAndDelete(postId)
+        if(postDeleted){
+            res.status(200).send({ message: "Post deleted successfully" })
+        }else{
+            next(createError(404, "Post not found"))
+        }
     } catch (error) {
         next(createError(500, "Error in deleting post details"))
     }
