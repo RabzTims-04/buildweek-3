@@ -1,12 +1,9 @@
 import express from "express";
 import createError from "http-errors";
-import q2m from "query-to-mongo"
 import ExperienceModel from "./schema.js"
 import multer from "multer";
-import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
 import json2csv from "json2csv";
-import { pipeline } from "stream";
+import { cloudinaryStorage } from "../../cloudinary/cloudinary.js"
 
 const Json2csvParser = json2csv.Parser
 const experiencesRouter = express.Router();
@@ -75,17 +72,9 @@ experiencesRouter.post("/", async (req, res, next) => {
     }
 })
 
-const cloudinaryStorage = new CloudinaryStorage({
-    cloudinary,
-    params:{
-      folder:"linkedIn"
-    }
-  })
-  
+/* ***************experience image****************** */
+
   const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("experience")
-  
-  /* ***************experience image****************** */
-  
   experiencesRouter.post("/:expId/picture",uploadOnCloudinary, async (req, res, next) => {
       try {
           const newImage = { image : req.file.path }
@@ -122,8 +111,7 @@ const cloudinaryStorage = new CloudinaryStorage({
     } catch (error) {
         next(createError(500, "Error in updating experience details"))
     }
-})
- 
+}) 
 
 /* ****************DELETE experience details***************** */
 
