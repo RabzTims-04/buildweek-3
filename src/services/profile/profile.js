@@ -61,6 +61,9 @@ profileRouter.get("/:userId/CV", async (req, res, next) => {
 
 profileRouter.post("/", async (req, res, next) => {
     try {
+        const newUser = new ProfileModel(req.body)
+        const postingUser = await newUser.save()
+        res.status(201).send(postingUser)
         
     } catch (error) {
         next(createError(500, "Error in profileing profile details"))
