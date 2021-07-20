@@ -2,8 +2,11 @@ import express from "express";
 import listEndpoints from "express-list-endpoints";
 import cors from "cors";
 import mongoose from "mongoose";
+//-----------------------------------------------------------
 import experiencesRouter from "./services/experiences/experience.js";
+//----------------------------------------------------------
 import postsRouter from "./services/posts/post.js";
+//-----------------------------------------------------------
 import profileRouter from "./services/profile/profile.js";
 import { notFoundErrorHandler, badRequestErrorHandler, catchAllErrorHandler } from "./errorMiddlewares.js";
 
@@ -17,9 +20,10 @@ server.use(cors())
 
 // ****************** ROUTES *******************************
 
-server.use("/experiences", experiencesRouter)
 server.use("/posts", postsRouter)
 server.use("/profile", profileRouter)
+server.use("/profile", experiencesRouter)
+
 
 // ****************** ERROR HANDLERS ***********************
 
