@@ -70,11 +70,10 @@ const ProfileSchema = new Schema(
                 type: String,
                 required: true,
                 default: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Facebook_icon.svg/1200px-Facebook_icon.svg.png"
-            }
-          },
-          {
-              timestamps: true
-          }]         
+            }, 
+            createdAt: Date,
+            updatedAt: Date           
+          },]         
     },
     {
         timestamps: true,
