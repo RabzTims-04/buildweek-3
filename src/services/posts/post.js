@@ -2,9 +2,10 @@ import express from "express";
 import createError from "http-errors";
 import q2m from "query-to-mongo"
 import PostModel from "./schema.js"
-import multer from "multer";
-import { cloudinaryStorage } from "../../cloudinary/cloudinary.js"
 
+import multer from "multer"; //midleware for file upload
+
+import { cloudinaryStorage } from "../../cloudinary/cloudinary.js"
 const postsRouter = express.Router();
 
 /* *************GET posts******************** */
@@ -37,17 +38,33 @@ postsRouter.get("/:postId", async (req, res, next) => {
         next(createError(500, "Error in getting single post"))
     }
 })  
-
 //   /* ***************post image****************** */
 
-//   const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("post")
-//   postsRouter.post("/:postId",uploadOnCloudinary, async (req, res, next) => {
-//       try {
+//multer({ storage: cloudinaryStorage}) means that we are going to upload images to cloudinary storage
+
+//single("post") is the key for multer, it is used to know which file is going to be uploaded
+
+  const uploadOnCloudinary = multer({ storage: cloudinaryStorage}).single("post") //Using multer to upload image to cloudinary
+  
+  postsRouter.post("/:postId/image",uploadOnCloudinary, async (req, res, next) => {
+      try {
+            const newImage = {image:req.file.path} // newImage is a json object with image as key and path as value
+            console.log(req.file)
+            const imagePosted = await PostModel.findByIdAndUpdate(req.params.postId,newImage,{
+                new:true,
+                runValidators:true
+            })
+       
+            if(imagePosted){
+                res.send(imagePosted)
+            }else{
+                next(createError(404,`"Image with the id ${req.params.postId} cannot be not found`))
+            }
           
-//       } catch (error) {
-//           next(createError(500, "Error in uploading post image"))
-//       }
-//   })
+      } catch (error) {
+          next(createError(500, "Error in uploading post image"))
+      }
+  })
 
 /* ***************POST post details****************** */
 
