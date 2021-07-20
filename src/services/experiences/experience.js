@@ -77,12 +77,13 @@ experiencesRouter.get("/:userId/experiences/:expId", async (req, res, next) => {
 
 experiencesRouter.post("/:userId/experiences", async (req, res, next) => {
     try {
-        const newExperience = { ...req.body }
+        const newExperience = { ...req.body, createdAt: new Date(), updatedAt: new Date() }
        const updatedExperience= await ProfileModel.findByIdAndUpdate(req.params.userId,{
            $push:{
                experiences: newExperience
            }
-       },{
+       },
+       {
            new:true,
            runValidators: true
        })
@@ -185,7 +186,7 @@ experiencesRouter.delete("/:userId/experiences/:expId", async (req, res, next) =
           res.send(experienceToDelete.experiences[0]);
         } else {
           next(createError(404, `experience not found`));
-        }
+        }        
     } catch (error) {
         next(createError(500, "Error in deleting experience details"))
     }
