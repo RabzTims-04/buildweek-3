@@ -39,11 +39,30 @@ profileRouter.get("/:userId", async (req, res, next) => {
 
 /* ***************GET CV/PDF of profile****************** */
 
-profileRouter.get("/:userId/CV", async (req, res, next) => {
+profileRouter.get("/:userId/pdf", async (req, res, next) => {
     try {
-
-
+        const profile = await ProfileModel.findById(req.params.userId)
+        if(profile){
+            const response = await axios.get(profile.image,{
+                responseType: 'arraybuffer'
+            })
+            const mediaPath = profile.image.split('/');
+            const fileName = mediaPath[mediaPath.length - 1];
+            const [id, extension] = fileName.split(".");
+            const b64 = Buffer.from(response.data).toString('base64');
+            const b64Image = `data:image/${extension};base64,${b64}`;
+            const source = generatePDFReadableStream(profile, b64Image);
+            const destination = res;
+            pipeline(source, destination, err => {
+                if (err) {
+            next(err);
+        }
+      });
+    } else {
+      next(createError(404, "Ptofile  ot found"));
+    }
     } catch (error) {
+        console.log(error);
         next(createError(500, "Error in getting single profile PDF"))
     }
 })
