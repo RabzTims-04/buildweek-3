@@ -3,6 +3,7 @@ import createError from "http-errors";
 import multer from "multer";
 import json2csv from "json2csv";
 import ProfileModel from "../profile/schema.js"
+import ExperienceModel from "../experiences/schema.js"
 import { cloudinaryStorage } from "../../cloudinary/cloudinary.js"
 
 const Json2csvParser = json2csv.Parser
@@ -28,7 +29,7 @@ experiencesRouter.get("/:userId/experiences", async (req, res, next) => {
 
 experiencesRouter.get("/:userId/experiences/CSV", async (req, res, next) => {
     try {
-        const source = await ProfileModel.findById(req.params.userId, {experiences:1, _id:0})
+        const source = await ProfileModel.findById(req.params.userId)
         console.log(source);
         if(source){
             const jsonData = JSON.parse(JSON.stringify(source.experiences))
@@ -59,16 +60,14 @@ experiencesRouter.get("/:userId/experiences/:expId", async (req, res, next) => {
             },
             _id:0
         })
-        if(experience){
-            if(experience.experiences.length > 0){
-                res.send(experience.experiences[0])
-            }else{
-                next(createError(404, `no experiences found`));
-            }
+
+        if(experience){            
+                res.send(experience.experiences[0])            
         }else{
             res.status(404).send(`experience with id: ${req.params.expId} not found`)
         }
     } catch (error) {
+        console.log(error);
         next(createError(500, "Error in getting single experience"))
     }
 })
@@ -77,7 +76,7 @@ experiencesRouter.get("/:userId/experiences/:expId", async (req, res, next) => {
 
 experiencesRouter.post("/:userId/experiences", async (req, res, next) => {
     try {
-        const newExperience = { ...req.body, createdAt: new Date(), updatedAt: new Date() }
+       const newExperience = new ExperienceModel({...req.body, updatedAt: new Date(), createdAt: new Date()})
        const updatedExperience= await ProfileModel.findByIdAndUpdate(req.params.userId,{
            $push:{
                experiences: newExperience
@@ -88,7 +87,8 @@ experiencesRouter.post("/:userId/experiences", async (req, res, next) => {
            runValidators: true
        })
        if(updatedExperience){
-           res.status(201).send(updatedExperience)
+           console.log(updatedExperience);
+           res.status(201).send(newExperience)
        }
        else{
            res.status(404).send(`profile with userid: ${req.params.userId} not found`)
@@ -104,20 +104,29 @@ experiencesRouter.post("/:userId/experiences", async (req, res, next) => {
   experiencesRouter.post("/:userId/experiences/:expId/picture",uploadOnCloudinary, async (req, res, next) => {
       try {
 
-        const experience = await ProfileModel.findOneAndUpdate({
-            _id:req.params.userId,
-            "experiences._id": req.params.expId
-        },{
-            $set:{"experiences.$.image" : req.file.path}
-        },{
-            new: true,
-            runValidators: true,
-          })
+        const userId= req.params.userId
+        const experienceId = req.params.expId
+        const updateExperience = await ProfileModel.findOneAndUpdate({
+            _id:userId,
+            "experiences._id": experienceId
+        }, {
+            $set: {
+                "experiences.$.image": req.file.path
+                }
+            },        
+        {
+         new: true  
+        })
 
-      console.log(experience);
+        const updatedexperience = await ProfileModel.findById(req.params.userId,{
+            experiences:{
+                $elemMatch : { _id: req.params.expId}
+            },
+            _id:0
+        })
  
-          if(experience){
-            res.send(experience)
+          if(updateExperience){
+            res.send(updatedexperience.experiences[0])
         }
         else{
           res.status(404).send(`experience with id: ${req.params.expId} not found`)
@@ -131,30 +140,48 @@ experiencesRouter.post("/:userId/experiences", async (req, res, next) => {
 
  experiencesRouter.put("/:userId/experiences/:expId", async (req, res, next) => {
     try {
-    const body = {};
-    for (let key in req.body) {
-      body[`experiences.$.${key}`] = req.body[key];
-    }
-    body[`experiences.$.updatedAt`] = new Date()
+        const userId= req.params.userId
+        const experienceId = req.params.expId
+        const updateProfileExperience = await ProfileModel.findById(userId,{
+            experiences: {
+                $elemMatch: {
+                    _id: experienceId
+                }
+            },
+            _id:0
+        })
 
-    const profile = await ProfileModel.findOneAndUpdate(
-      {
-        _id: req.params.userId,
-        "experiences._id": req.params.expId,
-      },
-      {
-        $set: body,
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-    if (profile) {
-      res.send(profile);
-    } else {
-        res.status(404).send(`experience with id: ${req.params.expId} not found`)
-    }
+        const toUpdateExp = updateProfileExperience.experiences[0].toObject()
+        console.log(toUpdateExp);
+       
+        const updateExperience = await ProfileModel.findOneAndUpdate({
+            _id:userId,
+            "experiences._id": experienceId
+        }, {
+            $set: {
+                "experiences.$": {
+                    ...toUpdateExp, ...req.body, updatedAt: new Date()
+                }
+            }
+        }, 
+        {
+         new: true , 
+         runValidators: true, 
+        })
+
+        const updatedexperience = await ProfileModel.findById(req.params.userId,{
+            experiences:{
+                $elemMatch : { _id: req.params.expId}
+            },
+            _id:0
+        })
+        
+           if(updateProfileExperience){
+               res.status(200).send(updatedexperience.experiences[0])
+           }
+           else{
+           next(createError(404, "Post not found"))            
+           }
     } catch (error) {
         next(createError(500, "Error in updating experience details"))
     }
