@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import experiencesRouter from "./services/experiences/experience.js";
 //----------------------------------------------------------
 import postsRouter from "./services/posts/post.js";
+// import likesRouter from "./services/likes/likes.js";
 //-----------------------------------------------------------
 import profileRouter from "./services/profile/profile.js";
 import commentsRouter from "./services/comments/comment.js";
@@ -22,6 +23,7 @@ server.use(cors())
 // ****************** ROUTES *******************************
 
 server.use("/posts", postsRouter)
+// server.use("/likes", likesRouter)
 server.use("/profile", profileRouter)
 server.use("/profile", experiencesRouter)
 server.use("/comments", commentsRouter)
