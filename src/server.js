@@ -8,6 +8,7 @@ import experiencesRouter from "./services/experiences/experience.js";
 import postsRouter from "./services/posts/post.js";
 //-----------------------------------------------------------
 import profileRouter from "./services/profile/profile.js";
+import commentsRouter from "./services/comments/comment.js";
 import { notFoundErrorHandler, badRequestErrorHandler, catchAllErrorHandler } from "./errorMiddlewares.js";
 
 const server = express();
@@ -23,6 +24,7 @@ server.use(cors())
 server.use("/posts", postsRouter)
 server.use("/profile", profileRouter)
 server.use("/profile", experiencesRouter)
+server.use("/comments", commentsRouter)
 
 
 // ****************** ERROR HANDLERS ***********************
