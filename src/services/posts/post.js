@@ -100,6 +100,28 @@ postsRouter.post("/", async (req, res, next) => {
     }
 }) 
 
+postsRouter.put("/:postId/likes", async (req, res, next) => {
+    try {
+        const postId = req.params.postId
+        const updatePost = await PostModel.findByIdAndUpdate(postId, {
+            likes: req.body.likes // This allows us to update the likes field
+        }, {
+            new: true ,
+            runValidators: true,
+        })
+
+    if(updatePost){
+        res.status(200).send(updatePost)
+        console.log(`The Likes on post with id ${postId} has been updated successfully`)
+    }else{
+        next(createError(404, "Post not found"))            
+        }
+
+    } catch (error) {
+        next(createError(500, "Error in updating post details"))
+    }
+}) 
+
 /* ****************DELETE post details***************** */
 
 postsRouter.delete("/:postId", async (req, res, next) => {

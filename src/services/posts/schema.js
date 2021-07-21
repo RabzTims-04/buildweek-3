@@ -15,7 +15,11 @@ const PostSchema = new Schema(
         },
         user: {
             type: Schema.Types.ObjectId,
-            ref: "Profile"
+            ref: "Profile" //This is a reference to the Profile schema that allows us to use the Profile model in our Post model
+        },
+        likes: {
+            type: Number,
+            default: 0
         },
     },
         {
