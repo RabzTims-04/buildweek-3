@@ -14,7 +14,9 @@ const CommentSchema = new Schema(
         },
         user: {
             type: Schema.Types.ObjectId,
-            ref: "Profile"
+            ref: "Profile"// This creates a reference to the Profile model 
+                          // and allows you to use the Profile model in the Comment model
+            
         },
         createdAt: Date,
         updatedAt: Date

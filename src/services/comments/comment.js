@@ -21,7 +21,7 @@ commentsRouter.get("/", async (req, res, next) => {
 commentsRouter.get("/:postId", async (req, res, next) => {
     try {        
         const postId = req.params.postId
-        const comments = await CommentModel.find({post: postId}).populate("post")
+        const comments = await CommentModel.find({post: postId}).populate("post").populate("user")
             if(comments){
                 res.status(200).send(comments)
             }else(
