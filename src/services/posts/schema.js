@@ -17,6 +17,12 @@ const PostSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "Profile"
         },
+        likes:[
+            {
+                type: Schema.Types.ObjectId,
+                ref: "Profile"
+            }
+        ]
     },
         {
             timestamps: true, // adding createdAt and modifiedAt automatically 

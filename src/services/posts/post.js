@@ -20,6 +20,23 @@ postsRouter.get("/", async (req, res, next) => {
     }
 })
 
+/* *************GET Likes******************** */
+
+postsRouter.get("/:postId/likes", async (req, res, next) => {
+    try {
+        const postId = req.params.postId
+        const post = await PostModel.findById(postId).populate("likes", {experiences:0})
+        if(post){
+            res.status(200).send(post)
+        }else(
+            next(createError(404, "Post not found"))
+        )  
+        
+    } catch (error) {
+        next(createError(500, "Error in getting posts"))
+    }
+})
+
 /* ***************GET single post****************** */
 
 postsRouter.get("/:postId", async (req, res, next) => {
@@ -27,7 +44,7 @@ postsRouter.get("/:postId", async (req, res, next) => {
         
         const postId = req.params.postId
 
-        const post = await PostModel.findById(postId).populate("user")
+        const post = await PostModel.findById(postId).populate("user", {experiences:0})
             if(post){
                 res.status(200).send(post)
             }else(
@@ -65,6 +82,49 @@ postsRouter.get("/:postId", async (req, res, next) => {
           next(createError(500, "Error in uploading post image"))
       }
   })
+
+  /* ***************post Likes****************** */
+
+  postsRouter.post("/:userId/likes/:postId", async (req, res, next) => {
+      try {
+          let newPost
+          const postId = req.params.postId
+          const userId = req.params.userId
+          const checkLikes = await PostModel.findOne({
+              _id: postId,
+              likes: userId
+          })
+          if(checkLikes){
+              newPost = await PostModel.findByIdAndUpdate(postId,
+                  {
+                      $pull: {
+                          likes: userId
+                      }
+                  },
+                  {
+                      new: true,
+                      runValidators: true
+                  }
+              )
+          }else{
+              newPost = await PostModel.findByIdAndUpdate(postId,
+                  {
+                      $push: {
+                          likes: userId
+                      }
+                  },
+                  {
+                      new: true,
+                      runValidators: true
+                  }
+              )
+          }
+          res.send(newPost)
+      } catch (error) {
+          console.log(error);
+          next(createError(500, "Error in posting likes"))
+      }
+    })
 
 /* ***************POST post details****************** */
 
