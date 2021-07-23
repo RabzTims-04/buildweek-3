@@ -10,18 +10,58 @@ import { generatePDFReadableStream } from "../../lib/pdf/pdf.js";
 
 const profileRouter = express.Router();
 
-/* *************GET profile******************** */
+/* *************GET All Profiles By Search******************** */
 
 profileRouter.get("/", async (req, res, next) => {
+  
+    //Returns all profiles that match the search query made by the user
     try {
-        const newUser = await ProfileModel.find()
-        res.send(newUser)      
-    } catch (error) {        
-        next(createError(500, "Error in getting profile"))
+        const query = q2m(req.query, { maxLimit: 2 })
+        const usersBySearch = await ProfileModel.find(
+            query.criteria,
+             query.options.fields
+             ).skip(
+                 query.options.skips
+                 ).limit(
+                     query.options.limit
+                     )
+
+                  
+        if(usersBySearch){
+            res.status(200).send(usersBySearch)
+        }else{
+            next(createError(404, { message:`No users found with the name ${query}`}))
+        }
+    }
+    catch (error) {        
+        next(createError(500, {message:"Error in getting profiles"}))
     }
 })
 
-/* ***************GET SINGLE ****************** */
+/* *************GET All Profiles******************** */
+
+// profileRouter.get("/", async (req, res, next) => {
+//     //return all profiles filtered by query
+
+
+//     try {
+//         const users = await ProfileModel.find(
+//             // {
+//             //     $limit:10 // Limit the number of results by 10
+//             // }
+//         )
+//         if(users){
+//             res.send(users) 
+//         }else{
+//             next(createError(404, "No users found"));
+//         }   
+//     }
+//     catch (error) {        
+//         next(createError(500, "Error in getting profile"))
+//     }
+// })
+
+/* ***************GET SINGLE Profile****************** */
 
 profileRouter.get("/:userId", async (req, res, next) => {
     try {

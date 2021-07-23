@@ -15,5 +15,5 @@ export const notFoundErrorHandler = (err, req, res, next) => {
   }
   
   export const catchAllErrorHandler = (err, req, res, next) => {
-    res.status(500).send("Generic Server Error")
+    res.status(500).send("Internal Server Error")
   }
