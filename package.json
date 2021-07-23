@@ -31,6 +31,7 @@
     "http-errors": "^1.8.0",
     "json2csv": "^5.0.6",
     "mongoose": "^5.13.3",
+    "mongoskin": "^2.1.0",
     "multer": "^1.4.2",
     "multer-storage-cloudinary": "^4.0.0",
     "pdfmake": "^0.2.0",
